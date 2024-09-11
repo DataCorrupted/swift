@@ -506,7 +506,11 @@ SIMPLE_DECL_ATTR(unsafe, Unsafe,
   ABIStableToAdd | ABIStableToRemove | APIBreakingToAdd | APIStableToRemove,
   160)
 
-LAST_DECL_ATTR(Unsafe)
+SIMPLE_DECL_ATTR(objcDirect, ObjCDirect,
+  OnAbstractFunction | ABIBreakingToAdd | ABIBreakingToRemove | APIStableToAdd | APIStableToRemove,
+  161)
+
+LAST_DECL_ATTR(ObjCDirect)
 
 #undef DECL_ATTR_ALIAS
 #undef CONTEXTUAL_DECL_ATTR_ALIAS

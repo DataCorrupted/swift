@@ -366,6 +366,7 @@ public:
   void visitWeakLinkedAttr(WeakLinkedAttr *attr);
   void visitSILGenNameAttr(SILGenNameAttr *attr);
   void visitUnsafeAttr(UnsafeAttr *attr);
+  void visitObjCDirectAttr(ObjCDirectAttr* attr);
 };
 
 } // end anonymous namespace
@@ -7673,6 +7674,16 @@ void AttributeChecker::visitUnsafeAttr(UnsafeAttr *attr) {
 
   diagnoseAndRemoveAttr(attr, diag::unsafe_attr_disabled);
 }
+
+/// Simple, you need to have @objC / @objcMembers in order to @objCDirect. 
+/// If we have either, rely on their visitor to do the right thing.
+/// Just sit back and relax.
+void AttributeChecker::visitObjCDirectAttr(ObjCDirectAttr *attr) {
+  if (D->getAttrs().hasAttribute<ObjCAttr>() || D->getAttrs().hasAttribute<ObjCMembersAttr>())
+    return;
+  diagnoseAndRemoveAttr(attr, diag::objc_direct_without_objc);
+}
+
 
 namespace {
 

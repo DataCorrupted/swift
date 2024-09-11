@@ -1742,6 +1742,10 @@ namespace  {
         Diags.diagnose(Base, diag::overridden_here);
       }
     }
+
+    void visitObjCDirectAttr(ObjCDirectAttr* attr) {
+      // TODO
+    }
   };
 } // end anonymous namespace
 
