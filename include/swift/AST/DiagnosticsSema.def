@@ -112,7 +112,7 @@ ERROR(could_not_find_imported_enum_case,none,
 
 NOTE(did_you_mean_raw_type,none,
      "did you mean to specify a raw type on the enum declaration?", ())
-     
+
 NOTE(did_you_mean_generic_param_as_conformance,none,
      "did you mean to declare %0 as a protocol conformance for %1?", (DeclName, Type))
 
@@ -1224,7 +1224,7 @@ REMARK(transitive_dependency_behavior,none,
        "%1 has %select{a required|an optional|an ignored}2 "
        "transitive dependency on '%0'",
        (StringRef, Identifier, unsigned))
-       
+
 REMARK(explicit_interface_build_skipped,none,
        "Skipped rebuilding module at %0 - up-to-date",
        (StringRef))
@@ -1468,7 +1468,7 @@ ERROR(optional_self_not_unwrapped,none,
       "to make control flow explicit", ())
 NOTE(optional_self_chain,none,
      "reference 'self?.' explicitly", ())
-    
+
 ERROR(missing_unwrap_optional_try,none,
       "value of optional type %0 not unwrapped; did you mean to use 'try!' "
       "or chain with '?'?",
@@ -1479,7 +1479,7 @@ NOTE(missing_forced_downcast, none,
      "did you mean to use 'as!' to force downcast?", ())
 NOTE(missing_optional_downcast, none,
      "did you mean to use 'as?' to conditionally downcast?", ())
-     
+
 WARNING(coercion_may_fail_warning,none,
         "coercion from %0 to %1 may fail; use 'as?' or 'as!' instead",
         (Type, Type))
@@ -1686,7 +1686,7 @@ ERROR(nominal_type_not_attribute,none,
 
 ERROR(mutating_invalid_global_scope,none, "%0 is only valid on methods",
       (SelfAccessKind))
-ERROR(mutating_invalid_classes,none, "%0 is not valid on %1s in " 
+ERROR(mutating_invalid_classes,none, "%0 is not valid on %1s in "
       "%select{classes|class-bound protocols}2",
       (SelfAccessKind, DescriptiveDeclKind, bool))
 
@@ -3868,7 +3868,7 @@ NOTE(automatic_protocol_synthesis_unsupported,none,
     "automatic synthesis of '%0' is not supported for %1 declarations",
     (StringRef, DescriptiveDeclKind))
 NOTE(comparable_synthesis_raw_value_not_allowed, none,
-     "enum declares raw type %0, preventing synthesized conformance of %1 to %2", 
+     "enum declares raw type %0, preventing synthesized conformance of %1 to %2",
      (Type, Type, Type))
 
 // Dynamic Self
@@ -4111,7 +4111,7 @@ ERROR(attr_rawlayout_cannot_have_alignment_attr,none,
       "type with @_rawLayout cannot also have an @_alignment attribute", ())
 ERROR(attr_rawlayout_invalid_count_type,none,
       "@_rawLayout count must either be integer literal or a generic argument", ())
-      
+
 // lazy
 ERROR(lazy_not_on_let,none,
       "'lazy' cannot be used on a let", ())
@@ -4454,15 +4454,15 @@ ERROR(unordered_adjacent_operators,none,
 ERROR(missing_builtin_precedence_group,none,
       "broken standard library: missing builtin precedence group %0",
       (Identifier))
-WARNING(nan_comparison, none, 
+WARNING(nan_comparison, none,
        "comparison with '.nan' using %0 is always %select{false|true}1, use "
        "'%2.isNaN' to check if '%3' %select{is not a number|is a number}1",
        (Identifier, bool, StringRef, StringRef))
-WARNING(nan_comparison_without_isnan, none, 
-       "comparison with '.nan' using %0 is always %select{false|true}1", 
+WARNING(nan_comparison_without_isnan, none,
+       "comparison with '.nan' using %0 is always %select{false|true}1",
        (Identifier, bool))
-WARNING(nan_comparison_both_nan, none, 
-       "'.nan' %0 '.nan' is always %select{false|true}1", 
+WARNING(nan_comparison_both_nan, none,
+       "'.nan' %0 '.nan' is always %select{false|true}1",
        (StringRef, bool))
 
 // If you change this, also change enum TryKindForDiagnostics.
@@ -4549,7 +4549,7 @@ ERROR(could_not_infer_pack_element,none,
 NOTE(note_in_opening_pack_element,none,
       "in inferring pack element #%0 of '%1'", (unsigned,StringRef))
 
-      
+
 ERROR(type_of_expression_is_ambiguous,none,
       "type of expression is ambiguous without a type annotation", ())
 
@@ -4605,7 +4605,7 @@ ERROR(should_use_empty_dictionary_literal,none,
 WARNING(duplicated_literal_keys_in_dictionary_literal, none,
         "dictionary literal of type %0 has duplicate entries for %1 literal key%select{ %3|}2",
         (Type, StringRef, bool, StringRef))
-NOTE(duplicated_key_declared_here, none, 
+NOTE(duplicated_key_declared_here, none,
      "duplicate key declared here", ())
 
 // Generic specializations
@@ -5469,7 +5469,7 @@ NOTE(property_requires_actor,none,
       "initializer for %0 %1 is %2",
       (DescriptiveDeclKind, Identifier, ActorIsolation))
 ERROR(isolated_default_argument_context,none,
-      "%0 default value in a %1 context", 
+      "%0 default value in a %1 context",
       (ActorIsolation, ActorIsolation))
 ERROR(conflicting_default_argument_isolation,none,
       "default argument cannot be both %0 and %1",
@@ -6177,7 +6177,7 @@ ERROR(differentiable_function_type_void_result,
       "differentiable inout parameter, i.e. a non-'@noDerivative' parameter "
       "whose type conforms to 'Differentiable'",
       ())
-ERROR(differentiable_function_type_no_differentiability_parameters, 
+ERROR(differentiable_function_type_no_differentiability_parameters,
       none,
       "'@differentiable' function type requires at least one differentiability "
       "parameter, i.e. a non-'@noDerivative' parameter whose type conforms to "
@@ -8034,6 +8034,8 @@ ERROR(availability_value_generic_type_only_version_newer, none,
 // MARK: ObjC Direct
 //===----------------------------------------------------------------------===//
 ERROR(objc_direct_without_objc,none,"@ObjCDirect used without @ObjC or @objcMembers", ())
+ERROR(objc_direct_with_renamed_objc,none,"@ObjCDirect with @ObjC with name argument is not supported yet", ())
+ERROR(objc_direct_on_ctor_dtor,none,"@ObjCDirect used on constructors and/or destructors is not supported yet", ())
 
 #define UNDEFINE_DIAGNOSTIC_MACROS
 #include "DefineDiagnosticMacros.h"

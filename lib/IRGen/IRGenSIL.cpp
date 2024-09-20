@@ -2346,8 +2346,10 @@ static void emitEntryPointArgumentsCOrObjC(IRGenSILFunction &IGF,
                                            Explosion &params,
                                            CanSILFunctionType funcTy) {
   auto emission = getCOrObjCEntryPointArgumentEmission(IGF, *entry, params);
+  bool isDirect = IGF.CurSILFn->isObjCDirect();
   // First, lower the method type.
-  ForeignFunctionInfo foreignInfo = IGF.IGM.getForeignFunctionInfo(funcTy);
+  ForeignFunctionInfo foreignInfo =
+      IGF.IGM.getForeignFunctionInfo(funcTy, isDirect);
   assert(foreignInfo.ClangInfo);
   auto &FI = *foreignInfo.ClangInfo;
 
@@ -2365,7 +2367,7 @@ static void emitEntryPointArgumentsCOrObjC(IRGenSILFunction &IGF,
 
   // Handle the arguments of an ObjC method.
   if (IGF.CurSILFn->getRepresentation() ==
-        SILFunctionTypeRepresentation::ObjCMethod) {
+      SILFunctionTypeRepresentation::ObjCMethod) {
     // Claim the self argument from the end of the formal arguments.
     SILArgument *selfArg = args.back();
     args = args.slice(0, args.size() - 1);
@@ -2383,14 +2385,14 @@ static void emitEntryPointArgumentsCOrObjC(IRGenSILFunction &IGF,
     Explosion self;
     self.add(selfValue);
     IGF.setLoweredExplosion(selfArg, self);
-
-    // Discard the implicit _cmd argument.
-    params.claimNext();
+    if (!isDirect)
+      // Discard the implicit _cmd argument.
+      params.claimNext();
 
     // We've handled the self and _cmd arguments, so when we deal with
     // generating explosions for the remaining arguments we can skip
     // these.
-    nextArgTyIdx = 2;
+    nextArgTyIdx = (isDirect)? 1: 2;
   }
 
   assert(args.size() == (FI.arg_size() - nextArgTyIdx) &&

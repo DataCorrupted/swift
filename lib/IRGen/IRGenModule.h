@@ -1621,7 +1621,7 @@ public:
   llvm::FunctionType *getFunctionType(CanSILFunctionType type,
                                       llvm::AttributeList &attrs,
                                       ForeignFunctionInfo *foreignInfo=nullptr);
-  ForeignFunctionInfo getForeignFunctionInfo(CanSILFunctionType type);
+  ForeignFunctionInfo getForeignFunctionInfo(CanSILFunctionType type, bool isDirect=false);
 
   void
   ensureImplicitCXXDestructorBodyIsDefined(clang::CXXDestructorDecl *cxxDtor);

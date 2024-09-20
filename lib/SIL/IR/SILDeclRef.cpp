@@ -1270,6 +1270,12 @@ std::string SILDeclRef::mangle(ManglingKind MKind) const {
         return CDeclA->Name.str();
       }
 
+    if (getDecl()->getAttrs().hasAttribute<ObjCDirectAttr>() && isForeign) {
+      /// TODO
+      auto clangMangling = "\01-[Foo foo0]";
+      return clangMangling;
+    }
+
     if (SKind == ASTMangler::SymbolKind::DistributedThunk) {
       return mangler.mangleDistributedThunk(cast<FuncDecl>(getDecl()));
     }

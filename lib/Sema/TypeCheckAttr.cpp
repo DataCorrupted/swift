@@ -7679,9 +7679,18 @@ void AttributeChecker::visitUnsafeAttr(UnsafeAttr *attr) {
 /// If we have either, rely on their visitor to do the right thing.
 /// Just sit back and relax.
 void AttributeChecker::visitObjCDirectAttr(ObjCDirectAttr *attr) {
-  if (D->getAttrs().hasAttribute<ObjCAttr>() || D->getAttrs().hasAttribute<ObjCMembersAttr>())
-    return;
-  diagnoseAndRemoveAttr(attr, diag::objc_direct_without_objc);
+  ObjCAttr *objcAttr = D->getAttrs().getAttribute<ObjCAttr>();
+  if (!objcAttr)
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_without_objc);
+  if (objcAttr->getName()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_with_renamed_objc);
+  }
+
+  if (isa<ConstructorDecl>(D) || isa<DestructorDecl>(D)) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_on_ctor_dtor);
+  }
+  // auto fn = dyn_cast<AbstractFunctionDecl>(D);
+  return;
 }
 
 

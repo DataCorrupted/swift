@@ -773,12 +773,15 @@ IRGenModule::getFunctionType(CanSILFunctionType type,
 }
 
 ForeignFunctionInfo
-IRGenModule::getForeignFunctionInfo(CanSILFunctionType type) {
+IRGenModule::getForeignFunctionInfo(CanSILFunctionType type, bool isDirect) {
   if (type->getLanguage() == SILFunctionLanguage::Swift)
     return ForeignFunctionInfo();
 
   auto &sigInfo = getFuncSignatureInfoForLowered(*this, type);
-  return sigInfo.getSignature(*this).getForeignInfo();
+  if (type->getRepresentation() == SILFunctionTypeRepresentation::ObjCMethod && isDirect) 
+    return static_cast<const ObjCFuncSignatureInfo*>(&sigInfo)->getDirectSignature(*this).getForeignInfo();
+  else
+    return sigInfo.getSignature(*this).getForeignInfo();
 }
 
 static void emitApplyArgument(IRGenFunction &IGF,
