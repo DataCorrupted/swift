@@ -781,6 +781,18 @@ IRGenModule::getForeignFunctionInfo(CanSILFunctionType type) {
   return sigInfo.getSignature(*this).getForeignInfo();
 }
 
+ForeignFunctionInfo IRGenModule::getForeignFunctionInfo(CanSILFunctionType type,
+                                                        bool isDirect) {
+  if (isDirect) {
+    auto &sigInfo = getFuncSignatureInfoForLowered(*this, type);
+    if (type->getRepresentation() == SILFunctionType::Representation::ObjCMethod) {
+      auto &objcSigInfo = static_cast<const ObjCFuncSignatureInfo &>(sigInfo);
+      return objcSigInfo.getDirectSignature(*this).getForeignInfo();
+    }
+  }
+  return getForeignFunctionInfo(type);
+}
+
 static void emitApplyArgument(IRGenFunction &IGF,
                               CanSILFunctionType origFnTy,
                               SILParameterInfo origParam,

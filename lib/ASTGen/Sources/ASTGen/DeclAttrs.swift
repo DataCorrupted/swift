@@ -316,6 +316,8 @@ extension ASTGenVisitor {
       case .none:
         // Fall back to CustomAttr.
         break
+      case .objCDirect:
+        fatalError("unimplemented")
       }
     }
 

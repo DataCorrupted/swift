@@ -126,6 +126,8 @@ CLANG_MACRO_CONDITIONAL("SWIFT_NORETURN", , \
                         "__has_attribute(noreturn)", \
                         "__attribute__((noreturn))")
 
+CLANG_MACRO("SWIFT_OBJC_DIRECT", , "__attribute__((objc_direct))")
+
 CLANG_MACRO("SWIFT_CLASS_EXTRA", , )
 CLANG_MACRO("SWIFT_PROTOCOL_EXTRA", , )
 CLANG_MACRO("SWIFT_ENUM_EXTRA", , )

@@ -1760,7 +1760,13 @@ namespace  {
       }
     }
 
-    void visitObjCAttr(ObjCAttr *attr) {}
+    void visitObjCDirectAttr(ObjCDirectAttr *attr) {}
+    void visitObjCAttr(ObjCAttr *attr) {
+      if (Override->getAttrs().hasAttribute<ObjCDirectAttr>()) {
+        Diags.diagnose(Override, diag::objc_override_with_direct_method);
+        Diags.diagnose(Base, diag::overridden_here);
+      }
+    }
 
     void visitUnsafeAttr(UnsafeAttr *attr) {
       if (!Base->getASTContext().LangOpts.hasFeature(Feature::WarnUnsafe))

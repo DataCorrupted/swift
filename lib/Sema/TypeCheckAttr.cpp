@@ -387,6 +387,7 @@ public:
   void visitSILGenNameAttr(SILGenNameAttr *attr);
   void visitUnsafeAttr(UnsafeAttr *attr);
   void visitLifetimeAttr(LifetimeAttr *attr);
+  void visitObjCDirectAttr(ObjCDirectAttr *attr);
 };
 
 } // end anonymous namespace
@@ -7749,6 +7750,34 @@ void AttributeChecker::visitUnsafeAttr(UnsafeAttr *attr) {
 }
 
 void AttributeChecker::visitLifetimeAttr(LifetimeAttr *attr) {}
+
+void AttributeChecker::visitObjCDirectAttr(ObjCDirectAttr *attr) {
+  assert(isa<AbstractFunctionDecl>(D) && "Only functions can be @objcDirect");
+  auto fn = dyn_cast<AbstractFunctionDecl>(D);
+  ObjCAttr *objcAttr = fn->getAttrs().getAttribute<ObjCAttr>();
+  if (isa<ProtocolDecl>(fn->getDeclContext())){
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_in_protocol);
+    return;
+  }
+
+  // AFD needs to be a `final` method
+  if (!fn->isFinal()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_not_final);
+    return;
+  }
+
+  // TODO: The following are all temporary restrictions that will be lifted.
+  // Need to have @objC / @objcMembers in order to @objcDirect.
+  // If we have either, rely on their visitor to do the right thing.
+  if (!objcAttr) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_without_objc);
+    return;
+  }
+  if (objcAttr->hasName()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_with_renamed_objc);
+    return;
+  }
+}
 
 namespace {
 

@@ -574,6 +574,8 @@ struct SILDeclRef {
   /// importer.
   bool isClangImported() const;
 
+  bool isExportedObjCDirect() const;
+
   /// True if the referenced entity is emitted by Clang on behalf of the Clang
   /// importer.
   bool isClangGenerated() const;

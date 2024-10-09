@@ -1764,6 +1764,9 @@ namespace {
       // Don't emit getters/setters for @NSManaged methods.
       if (method->getAttrs().hasAttribute<NSManagedAttr>()) return;
 
+      // No need to generate metadata for ObjCDirect
+      if (method->getAttrs().hasAttribute<ObjCDirectAttr>())
+        return;
       getMethodList(method).push_back(method);
     }
 

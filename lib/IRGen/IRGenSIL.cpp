@@ -2353,7 +2353,12 @@ static void emitEntryPointArgumentsCOrObjC(IRGenSILFunction &IGF,
                                            CanSILFunctionType funcTy) {
   auto emission = getCOrObjCEntryPointArgumentEmission(IGF, *entry, params);
   // First, lower the method type.
-  ForeignFunctionInfo foreignInfo = IGF.IGM.getForeignFunctionInfo(funcTy);
+  bool isDirect = IGF.CurSILFn->isObjCDirect();
+  ForeignFunctionInfo foreignInfo =
+      IGF.IGM.getForeignFunctionInfo(funcTy, isDirect);
+  // Explictly mark as direct method to make tbd happy.
+  if (isDirect)
+    IGF.CurFn->addFnAttr("objc_direct");
   assert(foreignInfo.ClangInfo);
   auto &FI = *foreignInfo.ClangInfo;
 
@@ -2390,13 +2395,10 @@ static void emitEntryPointArgumentsCOrObjC(IRGenSILFunction &IGF,
     self.add(selfValue);
     IGF.setLoweredExplosion(selfArg, self);
 
-    // Discard the implicit _cmd argument.
-    params.claimNext();
-
-    // We've handled the self and _cmd arguments, so when we deal with
-    // generating explosions for the remaining arguments we can skip
-    // these.
-    nextArgTyIdx = 2;
+    if (!isDirect)
+      // Discard the implicit _cmd argument to align with ObjC
+      params.claimNext();
+    nextArgTyIdx = (isDirect)? 1: 2;
   }
 
   assert(args.size() == (FI.arg_size() - nextArgTyIdx) &&

@@ -3605,6 +3605,7 @@ llvm::Function *IRGenModule::getAddrOfSILFunction(
              isLazilyEmittedFunction(*f, getSILModule())) {
     IRGen.addLazyFunction(f);
   }
+  isObjCDirect = f->isObjCDirect();
   auto fpKind = irgen::classifyFunctionPointerKind(f);
   Signature signature =
       getSignature(f->getLoweredFunctionType(), fpKind, isObjCDirect);

@@ -80,6 +80,11 @@ static bool validateSymbols(DiagnosticEngine &diags,
                                      IRModule.getDataLayout());
 
     auto value = nameValue.getValue();
+    // This is a objc direct method. Skip it.
+    if (auto fn = dyn_cast<llvm::Function>(value)) {
+      if (fn->hasFnAttribute("objc_direct")) 
+        continue;
+    }
     if (auto GV = dyn_cast<llvm::GlobalValue>(value)) {
       // Is this a symbol that should be listed?
       auto externallyVisible =

@@ -1366,6 +1366,9 @@ private:
       }
     }
 
+    if (AFD->getAttrs().hasAttribute<ObjCDirectAttr>()) {
+      os << " SWIFT_OBJC_DIRECT";
+    }
     if (!skipAvailability) {
       printAvailability(AFD);
     }

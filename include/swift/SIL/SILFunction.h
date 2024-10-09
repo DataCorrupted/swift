@@ -1387,6 +1387,14 @@ public:
     return V && V->getAttrs().hasAttribute<AlwaysEmitIntoClientAttr>();
   }
 
+  bool isObjCDirect() const {
+    if (!hasLocation())
+      return false;
+
+    auto *V = getLocation().getAsASTNode<ValueDecl>();
+    return V && V->getAttrs().hasAttribute<ObjCDirectAttr>();
+  }
+
   /// Return whether this function has attribute @_used on it
   bool markedAsUsed() const { return MarkedAsUsed; }
   void setMarkedAsUsed(bool value) { MarkedAsUsed = value; }

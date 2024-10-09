@@ -273,6 +273,11 @@ bool SILDeclRef::isClangImported() const {
   return false;
 }
 
+bool SILDeclRef::isExportedObjCDirect() const {
+  // The actual method is not foreign, only the wrapper is.
+  return getDecl()->getAttrs().hasAttribute<ObjCDirectAttr>() && isForeign;
+}
+
 bool SILDeclRef::isClangGenerated() const {
   if (!hasDecl())
     return false;
@@ -462,6 +467,14 @@ static LinkageLimit getLinkageLimit(SILDeclRef constant) {
     // Native-to-foreign thunks for methods are always just private, since
     // they're anchored by Objective-C metadata.
     auto &attrs = fn->getAttrs();
+#ifdef __FACEBOOK__
+    // If this is a direct method, it will follow the same linkage as defined in the source code.
+    // TODO: Unfortunately, this is a Pika only behavior. We need to expose objc_direct visibility
+    // in LLVM upstream before we can land this behavior in swift upstream.
+    if (constant.isNativeToForeignThunk() && attrs.hasAttribute<ObjCDirectAttr>()) {
+      return Limit::None;
+    }
+#endif
     if (constant.isNativeToForeignThunk() && !attrs.hasAttribute<CDeclAttr>()) {
       auto isTopLevel = fn->getDeclContext()->isModuleScopeContext();
       return isTopLevel ? Limit::OnDemand : Limit::Private;
@@ -1194,6 +1207,36 @@ static std::string mangleClangDecl(Decl *decl, bool isForeign) {
   return "";
 }
 
+// Since this `AFD` is not clang-imported, we cannot ask clang for help.
+static std::string mangleObjCDirect(AbstractFunctionDecl *AFD) {
+  std::string storage;
+  llvm::raw_string_ostream SS(storage);
+  // Instance method
+  SS << (AFD->isStatic() ? "+":"-");
+
+  // Brackets, assume it is angled
+  SS << "[";
+  // Class name
+  auto *ctx = AFD->getDeclContext();
+  auto *classDecl = ctx->getSelfClassDecl();
+  assert(classDecl && "ObjC direct method must be in a class");
+  // TODO: Extension/protocol of a class
+  SS << classDecl->getName();
+  // Method name
+  SS << " ";
+
+  // Methods with the same name and argument types are exported with different names.
+  // See more in:
+  // https://github.com/swiftlang/swift/blob/b5e3f42cad2edab63ae8700c5a5f66b5af55fa43/docs/CToSwiftNameTranslation.md#objective-c-methods
+  // https://github.com/swiftlang/swift/blob/b5e3f42cad2edab63ae8700c5a5f66b5af55fa43/docs/CToSwiftNameTranslation-OmitNeedlessWords.md
+  auto Sel = AFD->getObjCSelector();
+  llvm::SmallVector<char> scratch;
+  SS << Sel.getString(scratch);
+  
+  SS << "]";
+  return SS.str();
+}
+
 std::string SILDeclRef::mangle(ManglingKind MKind) const {
   using namespace Mangle;
   ASTMangler mangler;
@@ -1290,6 +1333,9 @@ std::string SILDeclRef::mangle(ManglingKind MKind) const {
         }
         return CDeclA->Name.str();
       }
+
+    if (isExportedObjCDirect())
+      return mangleObjCDirect(dyn_cast<AbstractFunctionDecl>(getDecl()));
 
     if (SKind == ASTMangler::SymbolKind::DistributedThunk) {
       return mangler.mangleDistributedThunk(cast<FuncDecl>(getDecl()));
