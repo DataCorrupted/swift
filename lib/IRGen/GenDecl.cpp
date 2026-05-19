@@ -3769,6 +3769,26 @@ llvm::Function *IRGenModule::getAddrOfSILFunction(
   fn = createFunction(*this, link, signature, insertBefore,
                       f->getOptimizationMode(), shouldEmitStackProtector(f));
 
+  // @objcDirect methods need External linkage so the symbol is resolvable by
+  // ObjC callers. Visibility follows Swift access control.
+  if (forDefinition) {
+    if (auto *AFD = dyn_cast_or_null<AbstractFunctionDecl>(
+            f->getDeclRef().getDecl())) {
+      if (AFD->isObjCDirect()) {
+        fn->setLinkage(llvm::GlobalValue::ExternalLinkage);
+        switch (AFD->getFormalAccess()) {
+        case AccessLevel::Public:
+        case AccessLevel::Open:
+          fn->setVisibility(llvm::GlobalValue::DefaultVisibility);
+          break;
+        default:
+          fn->setVisibility(llvm::GlobalValue::HiddenVisibility);
+          break;
+        }
+      }
+    }
+  }
+
   // Mark as llvm.used if @used, set section if @section
   if (f->markedAsUsed())
     addUsedGlobal(fn);

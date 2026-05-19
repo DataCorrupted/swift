@@ -555,6 +555,11 @@ public:
     if (isa<DestructorDecl>(AFD) || !AFD->isObjC() ||
         AFD->getFormalAccess() != AccessLevel::Public)
       return;
+
+    // @objcDirect methods are not in the ObjC method list.
+    if (AFD->isObjCDirect())
+      return;
+
     Visitor.addObjCMethod(AFD);
   }
 
