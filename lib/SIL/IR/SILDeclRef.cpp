@@ -1260,6 +1260,13 @@ bool SILDeclRef::declHasNonUniqueDefinition(const ValueDecl *decl) {
   return module != ctx.MainModule && ctx.MainModule;
 }
 
+bool SILDeclRef::isObjCDirect() const {
+  if (!isForeign)
+    return false;
+  auto *AFD = dyn_cast_or_null<AbstractFunctionDecl>(getDecl());
+  return AFD && AFD->isObjCDirect();
+}
+
 bool SILDeclRef::isForeignToNativeThunk() const {
   // If this isn't a native entry-point, it's not a foreign-to-native thunk.
   if (isForeign)
@@ -1420,6 +1427,31 @@ std::string SILDeclRef::mangle(ManglingKind MKind) const {
     auto genericSig = funcDecl->getGenericSignature();
     return GenericSpecializationMangler::manglePrespecialization(
         getASTContext(), mangledNonSpecializedString, genericSig, getSpecializedSignature());
+  }
+
+  // @objcDirect methods use Clang's ObjC method mangling with Direct ABI
+  // suffix instead of Swift's mangling.
+  if (isForeign) {
+    if (auto *AFD = dyn_cast<AbstractFunctionDecl>(getDecl())) {
+      if (AFD->isObjCDirect()) {
+        auto *classDecl = AFD->getDeclContext()->getSelfClassDecl();
+        assert(classDecl && "ObjC direct method must be in a class");
+
+        llvm::SmallString<64> classNameBuf;
+        StringRef className = classDecl->getObjCRuntimeName(classNameBuf);
+
+        llvm::SmallString<64> selectorBuf;
+        StringRef selectorStr = AFD->getObjCSelector().getString(selectorBuf);
+
+        std::string result;
+        llvm::raw_string_ostream OS(result);
+        clang::mangleObjCMethodName(OS, /*includePrefixByte=*/false,
+                                    AFD->isObjCInstanceMethod(), className,
+                                    /*CategoryName=*/std::nullopt, selectorStr,
+                                    /*useDirectABI=*/true);
+        return result;
+      }
+    }
   }
 
   ASTMangler::SymbolKind SKind = ASTMangler::SymbolKind::Default;
