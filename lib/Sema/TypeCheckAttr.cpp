@@ -410,6 +410,7 @@ public:
   void visitNonObjCAttr(NonObjCAttr *attr);
   void visitObjCImplementationAttr(ObjCImplementationAttr *attr);
   void visitObjCMembersAttr(ObjCMembersAttr *attr);
+  void visitObjCDirectAttr(ObjCDirectAttr *attr);
 
   void visitOptionalAttr(OptionalAttr *attr);
 
@@ -1921,6 +1922,64 @@ void AttributeChecker::visitObjCMembersAttr(ObjCMembersAttr *attr) {
   auto reason = ObjCReason(ObjCReason::ExplicitlyObjCMembers, attr);
   auto behavior = behaviorLimitForObjCReason(reason, Ctx);
   diagnoseObjCAttrWithoutFoundation(attr, D, reason, behavior);
+}
+
+void AttributeChecker::visitObjCDirectAttr(ObjCDirectAttr *attr) {
+  auto *fn = dyn_cast<AbstractFunctionDecl>(D);
+  if (!fn) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_not_final);
+    return;
+  }
+
+  // Disallow on deinit.
+  if (isa<DestructorDecl>(fn)) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_on_deinit);
+    return;
+  }
+
+  // Must be in a class, not a protocol.
+  if (isa<ProtocolDecl>(fn->getDeclContext())) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_in_protocol);
+    return;
+  }
+
+  // Must be final (except for initializers, which can't be overridden the
+  // same way).
+  if (!isa<ConstructorDecl>(fn) && !fn->isFinal()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_not_final);
+    return;
+  }
+
+  // Required initializers must be inherited - incompatible with direct.
+  if (auto *ctor = dyn_cast<ConstructorDecl>(fn)) {
+    if (ctor->isRequired()) {
+      diagnoseAndRemoveAttr(attr, diag::objc_direct_required_init);
+      return;
+    }
+  }
+
+  // Cannot override a superclass method.
+  if (fn->getOverriddenDecl()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_override);
+    return;
+  }
+
+  // Access level must be at least internal.
+  if (fn->getFormalAccess() < AccessLevel::Internal) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_access_level);
+    return;
+  }
+
+  // No async support yet.
+  if (fn->hasAsync()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_with_async);
+    return;
+  }
+
+  // @objcDirect implies @objc - add it if not present.
+  if (!fn->getAttrs().hasAttribute<ObjCAttr>()) {
+    fn->getAttrs().add(new (Ctx) ObjCAttr(/*implicit=*/true));
+  }
 }
 
 void AttributeChecker::visitOptionalAttr(OptionalAttr *attr) {
