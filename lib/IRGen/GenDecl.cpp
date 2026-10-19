@@ -232,6 +232,10 @@ public:
     if (prop->getAttrs().hasAttribute<NSManagedAttr>())
       return;
 
+    // An @objcDirect property's accessors have no selectors to register.
+    if (prop->isObjCDirect())
+      return;
+
     auto descriptor = emitObjCGetterDescriptorParts(IGM, prop);
     // When generating JIT'd code, we need to call sel_registerName() to force
     // the runtime to unique the selector.
@@ -256,7 +260,10 @@ public:
   void visitSubscriptDecl(SubscriptDecl *subscript) {
     assert(!subscript->isStatic() && "objc doesn't support class subscripts");
     if (!requiresObjCSubscriptDescriptor(IGM, subscript)) return;
-    
+
+    // An @objcDirect subscript's accessors have no selectors to register.
+    if (subscript->isObjCDirect()) return;
+
     auto descriptor = emitObjCGetterDescriptorParts(IGM, subscript);
     // When generating JIT'd code, we need to call sel_registerName() to force
     // the runtime to unique the selector.

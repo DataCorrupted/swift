@@ -1806,7 +1806,7 @@ namespace {
       if (method->getAttrs().hasAttribute<NSManagedAttr>()) return;
 
       // @objcDirect methods are not callable via objc_msgSend.
-      if (method->getAttrs().hasAttribute<ObjCDirectAttr>())
+      if (method->isObjCDirect())
         return;
 
       getMethodList(method).push_back(method);
@@ -1818,7 +1818,7 @@ namespace {
           !requiresObjCMethodDescriptor(constructor)) return;
 
       // @objcDirect initializers are not callable via objc_msgSend.
-      if (constructor->getAttrs().hasAttribute<ObjCDirectAttr>())
+      if (constructor->isObjCDirect())
         return;
 
       getMethodList(constructor).push_back(constructor);
@@ -2206,6 +2206,12 @@ namespace {
     /// Properties need to be collected in the properties list.
     void visitProperty(VarDecl *var) {
       if (requiresObjCPropertyDescriptor(IGM, var)) {
+        // An @objcDirect property is in neither list: no property descriptor,
+        // and no selectors for its accessors. This has to precede the
+        // push_back below, not merely guard the accessors.
+        if (var->isObjCDirect())
+          return;
+
         if (var->isStatic()) {
           ClassProperties.push_back(var);
         } else {
@@ -2476,6 +2482,9 @@ namespace {
     /// Subscripts should probably be collected in extended metadata.
     void visitSubscriptDecl(SubscriptDecl *subscript) {
       if (!requiresObjCSubscriptDescriptor(IGM, subscript)) return;
+
+      // An @objcDirect subscript's accessors are not callable via objc_msgSend.
+      if (subscript->isObjCDirect()) return;
 
       auto getter = subscript->getOpaqueAccessor(AccessorKind::Get);
       if (!getter) return;
