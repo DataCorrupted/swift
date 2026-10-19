@@ -546,8 +546,7 @@ static LinkageLimit getLinkageLimit(SILDeclRef constant) {
     // An @objcDirect method is deliberately *not* anchored by ObjC metadata --
     // its thunk is the exported implementation symbol -- so it keeps the
     // linkage implied by its Swift access level instead.
-    if (constant.isNativeToForeignThunk() &&
-        attrs.hasAttribute<ObjCDirectAttr>())
+    if (constant.isNativeToForeignThunk() && fn->isObjCDirect())
       return Limit::None;
     if (constant.isNativeToForeignThunk() &&
         !(attrs.hasAttribute<CDeclAttr>() && !fn->hasOnlyCEntryPoint())) {
