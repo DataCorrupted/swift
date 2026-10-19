@@ -1,16 +1,12 @@
 // REQUIRES: objc_interop
 // REQUIRES: swift_feature_ObjCDirect
 
-// The same imports as attr_objc_direct_selector_imported.swift, with the
-// feature on. Opting in extends the #selector check to imported objc_direct
-// declarations, which are no more sendable than Swift's own.
-//
-// Matched on the tail of the message only: attr_objc_direct_selector.swift
-// pins the full wording, and how each accessor is described is beside the
-// point here.
+// With the feature on, #selector and #keyPath reject imported direct
+// declarations too; attr_objc_direct_imported.swift is the feature-off case.
 
-// The explanatory note lands on the imported declaration, so it is out of
-// buffer; -verify-ignore-unrelated covers that.
+// Matched on the tail of each message: attr_objc_direct_selector.swift and
+// attr_objc_direct_keypath.swift pin the full wording. The notes land on the
+// imported declarations, out of buffer, hence -verify-ignore-unrelated.
 
 // RUN: %target-typecheck-verify-swift -verify-ignore-unrelated -enable-experimental-feature ObjCDirect -import-objc-header %S/../Inputs/objc_direct.h
 
@@ -40,4 +36,13 @@ func fromDirectMembersCategory() {
   // expected-error@-1 {{that is a direct method}}
   _ = #selector(getter: Bar.directProperty2)
   // expected-error@-1 {{that is a direct method}}
+}
+
+func keyPaths() -> [String] {
+  return [
+    #keyPath(Bar.directProperty),
+    // expected-error@-1 {{that is direct}}
+    #keyPath(Bar.directProperty2),
+    // expected-error@-1 {{that is direct}}
+  ]
 }

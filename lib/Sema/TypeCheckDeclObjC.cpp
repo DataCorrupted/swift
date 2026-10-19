@@ -4288,17 +4288,12 @@ private:
       if (reqCtor->isRequired() != cast<ConstructorDecl>(cand)->isRequired())
         return MatchOutcome::WrongRequiredAttr;
 
-    // Directness has to agree, or the two sides disagree about the symbol: the
-    // header's callers would reference a direct symbol the implementation does
-    // not define, or vice versa.
+    // Directness has to agree.
     //
-    // The requirement is imported Clang, so ask isObjCDirectDispatched(); the
-    // candidate is Swift, so ask for the attribute specifically.
-    if (auto reqAFD = dyn_cast<AbstractFunctionDecl>(req)) {
-      auto candAFD = cast<AbstractFunctionDecl>(cand);
-      if (reqAFD->isObjCDirectDispatched() != candAFD->isObjCDirect())
-        return MatchOutcome::WrongDirectness;
-    }
+    // TODO: If Objective-C says direct, Swift could infer that and add an
+    // implicit @objcDirect; but no surprises for now, keep it explicit.
+    if (req->isObjCDirectDispatched() != cand->isObjCDirect())
+      return MatchOutcome::WrongDirectness;
 
     if (auto reqAFD = dyn_cast<AbstractFunctionDecl>(req)) {
       auto candAFD = cast<AbstractFunctionDecl>(cand);
@@ -4715,8 +4710,7 @@ private:
     }
 
     case MatchOutcome::WrongDirectness: {
-      bool shouldBeDirect =
-          cast<AbstractFunctionDecl>(req)->isObjCDirectDispatched();
+      bool shouldBeDirect = req->isObjCDirectDispatched();
 
       auto diag = diagnose(cand, diag::objc_implementation_directness_mismatch,
                            cand, req, shouldBeDirect);

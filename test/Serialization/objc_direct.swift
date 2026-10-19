@@ -1,20 +1,12 @@
 // REQUIRES: objc_interop
 // REQUIRES: swift_feature_ObjCDirect
 
-/// Round-trip @objcDirect through a *binary* .swiftmodule.
+/// Round-trip @objcDirect through a *binary* .swiftmodule, which carries it by
+/// record code rather than by printing and re-parsing as the .swiftinterface in
+/// test/ModuleInterface/objc_direct.swift does.
 ///
-/// test/ModuleInterface/objc_direct.swift covers the textual .swiftinterface
-/// path, which is a different mechanism: there the attribute is printed and
-/// re-parsed, whereas here it has to survive serialization and deserialization
-/// by record code. A serialization code is only observable through a
-/// round-trip, so without this test breaking it outright would produce no
-/// signal at all.
-///
-/// The oracle is witness_objc_direct. That diagnostic can only be emitted if
-/// the *deserialized* method still carries the attribute, so its presence
-/// proves the round-trip rather than merely proving the module loaded. The
-/// conformance is deliberately declared in the client, not the library, so the
-/// witness being checked is the imported decl.
+/// The oracle is witness_objc_direct, which can only be emitted if the
+/// *deserialized* declaration still carries the attribute.
 
 // RUN: %empty-directory(%t)
 // RUN: split-file %s %t
@@ -30,14 +22,10 @@
 // RUN:   -verify-additional-prefix direct- \
 // RUN:   -enable-experimental-feature ObjCDirect %t/Client.swift
 
-/// Negative control. Rebuild the same library with the method as plain @objc
-/// and check the error is *absent*, which is what shows the diagnostic tracks
-/// the attribute rather than something incidental to importing the class.
-///
-/// Note the substitution replaces @objcDirect with @objc rather than deleting
-/// it. @objcDirect implies @objc, so deleting it would also remove the @objc
-/// and the control would fail with "does not satisfy requirement" -- failing
-/// for an unrelated reason, i.e. controlling for the wrong variable.
+/// Negative control: the same library as plain @objc, where the error is
+/// absent. The substitution replaces @objcDirect rather than deleting it, since
+/// deleting it would also remove the implied @objc and fail for an unrelated
+/// reason.
 // RUN: %empty-directory(%t/plain)
 // RUN: sed 's/@objcDirect/@objc/' %t/DirectLib.swift > %t/plain/DirectLib.swift
 // RUN: %target-swift-frontend -emit-module -o %t/plain/DirectLib.swiftmodule \
@@ -57,11 +45,22 @@ import Foundation
   @objcDirect public final func greet() {}
 }
 
+@objc public protocol Counter {
+  var count: Int { get }
+}
+
+@objc public class DirectCounter: NSObject {
+  @objcDirect public var count: Int = 0
+}
+
 //--- Client.swift
 
 import DirectLib
 
-/// The witness is the deserialized greet() from DirectLib, not a declaration in
-/// this file. Under the control build the same line is accepted.
+/// Conformed in the client, so the witness is the deserialized greet().
 extension DirectGreeter: Greeter {}
 // expected-direct-error@-1 {{cannot satisfy a requirement of '@objc' protocol 'Greeter' because it is a direct method}}
+
+/// The same round-trip on a VarDecl.
+extension DirectCounter: Counter {}
+// expected-direct-error@-1 {{cannot satisfy a requirement of '@objc' protocol 'Counter' because it is a direct method}}

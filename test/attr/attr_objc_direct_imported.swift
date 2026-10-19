@@ -1,12 +1,8 @@
 // REQUIRES: objc_interop
 
-// The #selector check is gated on the ObjCDirect feature, and this file does
-// not enable it: a module that never opted in keeps compiling. Taking the
-// selector only for its name is correct even though it will never resolve to
-// an implementation, and that idiom predates the attribute.
-//
-// attr_objc_direct_selector_imported_enabled.swift is the same imports with
-// the feature on, where these are rejected.
+// Without the feature, neither #selector nor #keyPath reports an imported
+// direct declaration; attr_objc_direct_imported_enabled.swift is the same
+// imports with the feature on.
 
 // RUN: %target-typecheck-verify-swift -import-objc-header %S/../Inputs/objc_direct.h
 
@@ -29,4 +25,11 @@ func selectorReferences() -> [Selector] {
 func fromDirectMembersCategory() {
   _ = #selector(Bar.directMethod2)
   _ = #selector(getter: Bar.directProperty2)
+}
+
+func keyPaths() -> [String] {
+  return [
+    #keyPath(Bar.directProperty),
+    #keyPath(Bar.directProperty2),
+  ]
 }

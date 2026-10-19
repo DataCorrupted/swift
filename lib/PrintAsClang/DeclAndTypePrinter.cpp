@@ -2164,7 +2164,13 @@ private:
     }
 
     // For now, never promise atomicity.
-    os << "@property (nonatomic";
+    os << "@property (";
+
+    // The macro supplies its own trailing comma, so it has to lead the list.
+    if (VD->isObjCDirect())
+      os << "SWIFT_OBJC_DIRECT_PROPERTY ";
+
+    os << "nonatomic";
 
     if (VD->isStatic())
       os << ", class";

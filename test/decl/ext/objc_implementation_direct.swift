@@ -21,4 +21,15 @@ import Foundation
 
   @objcDirect func anotherPlainMethod() {}
   // expected-error@-1 {{should not be '@objcDirect'}}
+
+  // '@property (direct)' imports as a direct property.
+  @objcDirect var directProperty: Int32 { get { 0 } set {} }
+
+  var plainProperty: Int32 { get { 0 } set {} }
+
+  var anotherDirectProperty: Int32 { get { 0 } set {} }
+  // expected-error@-1 {{should be '@objcDirect'}}
+
+  @objcDirect var anotherPlainProperty: Int32 { get { 0 } set {} }
+  // expected-error@-1 {{should not be '@objcDirect'}}
 }

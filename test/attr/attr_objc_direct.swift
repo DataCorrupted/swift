@@ -1,6 +1,8 @@
 // REQUIRES: objc_interop
 // REQUIRES: swift_feature_ObjCDirect
 
+// Where '@objcDirect' is accepted and rejected on methods and initializers.
+
 // RUN: %target-typecheck-verify-swift -enable-experimental-feature ObjCDirect
 
 import Foundation
@@ -28,11 +30,10 @@ class ObjCDirectClass: NSObject {
 
   @objc @objcDirect
   private final func privateMethod() { return }
-  // expected-error@-2 {{'private' or 'fileprivate' methods cannot be '@objcDirect'}}
+  // expected-error@-2 {{a 'private' or 'fileprivate' instance method cannot be '@objcDirect'}}
 }
 
-// All members of a `final class` are implicitly final, so no explicit `final`
-// is needed.
+// Members of a 'final class' are implicitly final, so no explicit 'final'.
 final class FinalClass: NSObject {
   @objc @objcDirect
   public func implicitlyFinal() { return }
@@ -41,8 +42,7 @@ final class FinalClass: NSObject {
   public func implicitlyFinalNoObjC() { return }
 }
 
-// @objcDirect implies @objc: a representable signature is accepted with no
-// explicit @objc.
+// '@objcDirect' implies '@objc'.
 class ImpliedObjC: NSObject {
   @objcDirect
   final func implied() -> Int { return 1 }
@@ -50,9 +50,7 @@ class ImpliedObjC: NSObject {
   @objcDirect
   final func impliedWithParams(x: Int) -> String { return "" }
 
-  // The implicit @objc is validated rather than silently added, so a signature
-  // that is not representable in Objective-C is still rejected -- by the
-  // standard @objc diagnostics.
+  // The implicit '@objc' is validated, not silently added.
   @objcDirect
   final func notRepresentableParam(x: NotObjCRepresentable) {}
   // expected-error@-1 {{instance method cannot be marked '@objc' because the type of the parameter cannot be represented in Objective-C}}
@@ -67,7 +65,7 @@ class ImpliedObjC: NSObject {
 struct NotObjCRepresentable {}
 
 class InitClass: NSObject {
-  // init is exempt from the `final` requirement.
+  // init is exempt from the 'final' requirement.
   @objc @objcDirect
   init(ok value: Int) { super.init() }
 
@@ -76,30 +74,10 @@ class InitClass: NSObject {
   // expected-error@-2 {{'@objcDirect' cannot be applied to 'required' initializers}}
 }
 
-// The attribute is OnFunc | OnConstructor | OnDestructor. Accessors and
-// subscripts are therefore rejected by the applicability check: GenClass
-// registers an accessor's selector through its var/subscript, which never
-// consults ObjCDirectAttr, so a direct accessor would keep a live selector --
-// advertising _cmd in its type encoding -- pointing at an entry point emitted
-// without it. deinit stays inside the mask purely so it keeps its own
-// diagnostic instead of the generic one.
+// deinit is in the applicability mask only so it keeps its own diagnostic.
 class DeinitClass: NSObject {
   @objcDirect deinit {}
   // expected-error@-1 {{'@objcDirect' cannot be applied to 'deinit'}}
-}
-
-class PropertyClass: NSObject {
-  @objcDirect var x: Int = 0
-  // expected-error@-1 {{cannot be applied to this declaration}}
-
-  var y: Int {
-    @objcDirect get { return 0 }
-    // expected-error@-1 {{cannot be applied to this declaration}}
-    set {}
-  }
-
-  @objcDirect subscript(i: Int) -> Int { return i }
-  // expected-error@-1 {{cannot be applied to this declaration}}
 }
 
 extension ObjCDirectClass {
@@ -122,11 +100,11 @@ class SubClass: ObjCDirectClass {
 
   @objc @objcDirect
   public override final func overridable() { return }
-  // expected-error@-2 {{'@objcDirect' methods cannot override superclass methods}}
+  // expected-error@-2 {{an '@objcDirect' instance method cannot override a superclass declaration}}
 
-  // The reverse direction, which the dropped 'final' requirement used to cover.
+  // The reverse direction.
   public override func nonFinal() { return }
-  // expected-error@-1 {{cannot override a method declared '@objcDirect'}}
+  // expected-error@-1 {{cannot override instance method declared '@objcDirect'}}
 }
 
 @objc
@@ -136,17 +114,14 @@ protocol DirectProtocol {
   // expected-error@-2 {{'@objcDirect' cannot be applied to protocol requirements}}
 }
 
-// A generic class is never printed to the generated ObjC header, so a direct
-// symbol on one could never be referenced from Objective-C -- even though the
-// standard @objc check permits the member.
+// A generic class is never printed to the generated header, so a direct symbol
+// on one is unreachable from Objective-C even though '@objc' permits it.
 class GenericClass<T>: NSObject {
   @objc @objcDirect
   public final func inGeneric() { return }
   // expected-error@-2 {{'@objcDirect' cannot be applied to members of a generic class}}
 }
 
-// Only class members: a global function, or a struct or enum member, has no
-// printed @interface name to mangle against.
 @objcDirect
 public func globalFunction() {}
 // expected-error@-2 {{'@objcDirect' can only be applied to members of a class}}

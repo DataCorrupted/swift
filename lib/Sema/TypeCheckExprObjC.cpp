@@ -339,6 +339,20 @@ ObjCKeyPathStringRequest::evaluate(Evaluator &evaluator, KeyPathExpr *expr,
           diags.diagnose(var, diag::make_decl_objc, var)
               .fixItInsert(var->getAttributeInsertionLoc(false), "@objc ");
         }
+      } else if (Context.LangOpts.hasFeature(Feature::ObjCDirect) &&
+                 var->isObjCDirectDispatched()) {
+        // Key-value coding falls back to the instance variable when it
+        // finds no accessor, so this resolves today and quietly bypasses the
+        // property.
+        //
+        // TODO: Remove the gate on the feature, once the existing code base
+        // has had time to adapt. It is gated only because this was never
+        // reported before.
+        diags.diagnose(componentNameLoc, diag::expr_keypath_objc_direct,
+                       var->getName());
+        diags.diagnose(var, diag::note_objc_direct_no_key_path);
+        isInvalid = true;
+        break;
       } else {
         // FIXME: Warn about non-KVC-compliant getter/setter names?
       }
