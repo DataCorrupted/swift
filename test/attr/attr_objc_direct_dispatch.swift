@@ -22,8 +22,23 @@ class DispatchConflicts: NSObject {
   @objcDirect @IBSegueAction func segueAction(_ coder: NSCoder) -> Any? { return nil }
   // expected-error@-1 {{'@objcDirect' cannot be applied to an '@IBAction' or '@IBSegueAction' method; the action is invoked by selector}}
 
-  // Control: none of the above applies, so this is accepted.
+  // Worse than the action case, which fails loudly. Interface Builder wires an
+  // outlet with setValue:forKey:, which falls back to the instance variable,
+  // so the outlet connects anyway through storage instead of the accessor --
+  // the '#keyPath' hazard, with no Swift use site to diagnose.
+  @objcDirect @IBOutlet var outlet: NSObject?
+  // expected-error@-1 {{'@objcDirect' cannot be applied to an '@IBOutlet', '@IBInspectable' or '@GKInspectable' property; the value is set by key through key-value coding}}
+
+  @objcDirect @IBInspectable var inspectable: Int = 0
+  // expected-error@-1 {{'@objcDirect' cannot be applied to an '@IBOutlet', '@IBInspectable' or '@GKInspectable' property; the value is set by key through key-value coding}}
+
+  // GameplayKit's editor sets its inspectables the same way.
+  @objcDirect @GKInspectable var gkInspectable: Int = 0
+  // expected-error@-1 {{'@objcDirect' cannot be applied to an '@IBOutlet', '@IBInspectable' or '@GKInspectable' property; the value is set by key through key-value coding}}
+
+  // Control: none of the above applies, so these are accepted.
   @objcDirect final func plainDirect() {}
+  @objcDirect var plainDirectProperty: NSObject?
 }
 
 @objc protocol Greeter {

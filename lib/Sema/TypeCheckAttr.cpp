@@ -2014,6 +2014,15 @@ void AttributeChecker::visitObjCDirectAttr(ObjCDirectAttr *attr) {
     return;
   }
 
+  // An outlet or inspectable is set by key from a nib, storyboard or
+  // editor, through key-value coding, which the compiler never sees.
+  if (D->getAttrs().hasAttribute<IBOutletAttr>() ||
+      D->getAttrs().hasAttribute<IBInspectableAttr>() ||
+      D->getAttrs().hasAttribute<GKInspectableAttr>()) {
+    diagnoseAndRemoveAttr(attr, diag::objc_direct_iboutlet);
+    return;
+  }
+
   // No 'final' requirement; TypeCheckDeclOverride makes sure it is not
   // overridden.
 
